@@ -1,29 +1,32 @@
 package RE2DFA;
 
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
-public class RE {
+public class RE2NFA {
 
     public NFA produceNFA(String expr){
         //将输入表达式转成后缀表达式
         String infixExpr = addConnector(expr);
         String postfixExpr = infixToPostfix(infixExpr);
-
         Stack<NFA> middleNFAs = new Stack<NFA>();
 
         int stateNo = 0;
 
         for(int i=0;i<postfixExpr.length();i++) {
             if(postfixExpr.charAt(i) == '|'){
-                NFA nfa1 = middleNFAs.pop();
                 NFA nfa2 = middleNFAs.pop();
+                NFA nfa1 = middleNFAs.pop();
                 middleNFAs.push(NFA.mergeNFA(nfa2, nfa1));
                 continue;
             }
             if(postfixExpr.charAt(i) == '.'){
-                NFA nfa1 = middleNFAs.pop();
                 NFA nfa2 = middleNFAs.pop();
-                middleNFAs.push(NFA.connectNFA(nfa2, nfa1));
+                NFA nfa1 = middleNFAs.pop();
+                middleNFAs.push(connectNFA(nfa2, nfa1));
                 continue;
             }
             if(postfixExpr.charAt(i)=='*'){
@@ -32,21 +35,44 @@ public class RE {
                 continue;
             }
             //if是表达式就构造小的NFA并压栈
-            NFA newNFA = new NFA();
+            NFA newNFA = new NFA();  //假设只有一个a 按照托马孙算法
             State state1 = new State(stateNo);
             State state2 = new State(stateNo+1);
-            Edge edge = new Edge(postfixExpr.charAt(i), state1.getStateNo(), state2.getStateNo());
-            stateNo+=2;
+            Map production = new HashMap();
+            ArrayList<State> nextState = new ArrayList<State>();
+            nextState.add(state2);
+            production.put(postfixExpr.charAt(i),nextState);
+            state1.setNextState(production);
+            state2.setFinalSate(true);
+            stateNo = stateNo+2; //下一个状态的开始序号
             newNFA.addState(state1);
             newNFA.addStartState(state1);
             newNFA.addState(state2);
             newNFA.addEndState(state2);
-            newNFA.addEdge(edge);
             middleNFAs.push(newNFA);
         }
         NFA nfa = middleNFAs.pop();
         return nfa;
 
+    }
+
+    /**
+     * 当遇到'.'时，两个NFA首尾连接
+     * @param nfa2
+     * @param nfa1
+     * @return
+     */
+    public NFA connectNFA(NFA nfa2, NFA nfa1) {
+        State originalEnd = nfa1.getNFA().getLast();
+        originalEnd.setFinalSate(false);
+        Map<Character, ArrayList<State>> joinProduction = new HashMap<>();
+        ArrayList<State> joinedState = new ArrayList<State>();
+        joinedState.add(nfa2.getNFA().getFirst());
+        joinProduction.put('ε', joinedState);
+        originalEnd.setNextState(joinProduction);
+        for (State s : nfa2.getNFA()) {	nfa1.getNFA().addLast(s); }
+
+        return nfa1;
     }
 
     /**
@@ -153,13 +179,13 @@ public class RE {
     }
 
     public static void main(String[] args){
-        //String[] temp = "( ( ( ( a | b ) * ) a ) ( a | b ) )".split(" ");
-        String s = "(a|b)*abb*";
+        String s = "ab";
 
-        RE re = new RE();
+        RE2NFA re = new RE2NFA();
         String a = re.addConnector(s);
 
-        System.out.println(re.infixToPostfix(a));
+       // System.out.println(re.infixToPostfix(a));
+        System.out.println(re.produceNFA(s).getNFA().getLast().isFinalSate());
 
     }
 }
