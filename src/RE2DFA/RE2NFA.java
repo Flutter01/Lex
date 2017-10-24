@@ -1,26 +1,25 @@
 package RE2DFA;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class RE2NFA {
+
+    private static int stateNo = 0;
+    private static Set<State> set1 = new HashSet <State> ();
+    private static Set<State> set2 = new HashSet <State> ();
+    private static Set <Character> input = new HashSet <Character> ();
 
     public NFA produceNFA(String expr){
         //将输入表达式转成后缀表达式
         String infixExpr = addConnector(expr);
         String postfixExpr = infixToPostfix(infixExpr);
         Stack<NFA> middleNFAs = new Stack<NFA>();
-
-        int stateNo = 0;
-
         for(int i=0;i<postfixExpr.length();i++) {
             if(postfixExpr.charAt(i) == '|'){
                 NFA nfa2 = middleNFAs.pop();
                 NFA nfa1 = middleNFAs.pop();
-                middleNFAs.push(NFA.mergeNFA(nfa2, nfa1));
+                middleNFAs.push(mergeNFA(nfa2, nfa1));
                 continue;
             }
             if(postfixExpr.charAt(i) == '.'){
@@ -31,18 +30,14 @@ public class RE2NFA {
             }
             if(postfixExpr.charAt(i)=='*'){
                 NFA nfa = middleNFAs.pop();
-                middleNFAs.push(NFA.ringNFA(nfa));
+                middleNFAs.push(ringNFA(nfa));
                 continue;
             }
             //if是表达式就构造小的NFA并压栈
             NFA newNFA = new NFA();  //假设只有一个a 按照托马孙算法
             State state1 = new State(stateNo);
-            State state2 = new State(stateNo+1);
-            Map production = new HashMap();
-            ArrayList<State> nextState = new ArrayList<State>();
-            nextState.add(state2);
-            production.put(postfixExpr.charAt(i),nextState);
-            state1.setNextState(production);
+            State state2 = new State(stateNo++);
+            state1.setNextState(postfixExpr.charAt(i), state2);
             state2.setFinalSate(true);
             stateNo = stateNo+2; //下一个状态的开始序号
             newNFA.addState(state1);
@@ -56,6 +51,92 @@ public class RE2NFA {
 
     }
 
+    public static DFA produceDFA(NFA nfa) {
+        DFA dfa = new DFA ();
+        stateNo = 0;
+
+        LinkedList <State> unprocessed = new LinkedList<State>();
+
+        set1 = new HashSet <State> ();
+        set2 = new HashSet <State> ();
+
+        set1.add(nfa.getNFA().getFirst());
+
+        removeEpsilonProduction ();
+
+        State dfaStart = new State (set2, stateNo++);
+
+        dfa.getDFA().addLast(dfaStart);
+        unprocessed.addLast(dfaStart);
+
+        while (!unprocessed.isEmpty()) {
+            State state = unprocessed.removeLast();
+
+            for (Character symbol : input) {
+                set1 = new HashSet<State> ();
+                set2 = new HashSet<State> ();
+
+                moveStates (symbol, state.getStates(), set1);
+                removeEpsilonProduction ();
+
+                boolean found = false;
+                State st = null;
+
+                for (int i = 0 ; i < dfa.getDFA().size(); i++) {
+                    st = dfa.getDFA().get(i);
+
+                    if (st.getStates().containsAll(set2)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    State p = new State (set2, stateNo++);
+                    unprocessed.addLast(p);
+                    dfa.getDFA().addLast(p);
+                    state.setNextState( symbol,p);
+
+                } else {
+                    state.setNextState( symbol,st);
+                }
+            }
+        }
+
+        return dfa;
+    }
+
+    private static void removeEpsilonProduction() {
+        Stack <State> stack = new Stack <State> ();
+        set2 = set1;
+
+        for (State st : set1) { stack.push(st);	}
+
+        while (!stack.isEmpty()) {
+            State s = stack.pop();
+
+            ArrayList <State> epsilonStates = s.getAllProductions ('ε');
+
+            for (State p : epsilonStates) {
+
+                if (!set2.contains(p)) {
+                    set2.add(p);
+                    stack.push(p);
+                }
+            }
+        }
+    }
+
+    private static void moveStates(Character c, Set<State> states,	Set<State> set) {
+        ArrayList <State> temp = new ArrayList<State> ();
+        for (State s : states) {	temp.add(s);	}
+
+        for (State s : temp) {
+            ArrayList<State> allStates = s.getAllProductions(c);
+            for (State p : allStates) {	set.add(p);	}
+        }
+    }
+
     /**
      * 当遇到'.'时，两个NFA首尾连接
      * @param nfa2
@@ -64,15 +145,64 @@ public class RE2NFA {
      */
     public NFA connectNFA(NFA nfa2, NFA nfa1) {
         State originalEnd = nfa1.getNFA().getLast();
-        originalEnd.setFinalSate(false);
-        Map<Character, ArrayList<State>> joinProduction = new HashMap<>();
-        ArrayList<State> joinedState = new ArrayList<State>();
-        joinedState.add(nfa2.getNFA().getFirst());
-        joinProduction.put('ε', joinedState);
-        originalEnd.setNextState(joinProduction);
-        for (State s : nfa2.getNFA()) {	nfa1.getNFA().addLast(s); }
 
+        originalEnd.setFinalSate(false);
+        originalEnd.setNextState('ε',nfa2.getNFA().getFirst());
+
+        for (State s : nfa2.getNFA()) {	nfa1.getNFA().addLast(s); }
         return nfa1;
+    }
+
+    /**
+     *
+     * @param nfa2
+     * @param nfa1
+     * @return
+     */
+    public NFA mergeNFA(NFA nfa2, NFA nfa1) {
+        State start = new State (stateNo++);
+        State end	= new State (stateNo++);
+        end.setFinalSate(true);
+
+        start.setNextState('ε',nfa1.getNFA().getFirst());
+        start.setNextState('ε',nfa2.getNFA().getFirst());
+
+        // Set transition to the end of each subNfa with empty string
+        nfa1.getNFA().getLast().setNextState('ε',end);
+        nfa1.getNFA().getLast().setFinalSate(false);
+        nfa2.getNFA().getLast().setNextState('ε',end);
+        nfa2.getNFA().getLast().setFinalSate(false);
+
+        // Add start to the end of each nfa
+        nfa1.getNFA().addFirst(start);
+        nfa2.getNFA().addLast(end);
+
+        // Add all states in nfa2 to the end of nfa1
+        // in order
+        for (State s : nfa2.getNFA()) {
+            nfa1.getNFA().addLast(s);
+        }
+        return nfa1;
+    }
+
+    public NFA ringNFA(NFA nfa) {
+        // Create states for star operation
+        State start = new State (stateNo++);
+        State end	= new State (stateNo++);
+        end.setFinalSate(true);
+
+        // Add transition to start and end state
+        start.setNextState('ε',end);
+        start.setNextState('ε',nfa.getNFA().getFirst());
+
+        nfa.getNFA().getLast().setNextState('ε',end);
+        nfa.getNFA().getLast().setNextState('ε',nfa.getNFA().getFirst());
+        nfa.getNFA().getLast().setFinalSate(false);
+
+        nfa.getNFA().addFirst(start);
+        nfa.getNFA().addLast(end);
+
+        return nfa;
     }
 
     /**
@@ -185,7 +315,7 @@ public class RE2NFA {
         String a = re.addConnector(s);
 
        // System.out.println(re.infixToPostfix(a));
-        System.out.println(re.produceNFA(s).getNFA().getLast().isFinalSate());
+        System.out.println(re.produceNFA(s).getNFA().size());
 
     }
 }
