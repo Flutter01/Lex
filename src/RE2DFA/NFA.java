@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class NFA {
     private LinkedList<State> nfa;
-    private LinkedList<State> startState;
+    private LinkedList<State> startState = new LinkedList<State>();
     private LinkedList<State> endState = new LinkedList<State>();
 
     public NFA() {
@@ -33,8 +33,13 @@ public class NFA {
         this.startState.add(state);
     }
 
+    public State getStartState() {
+        return  this.startState.getLast();
+    }
+
     public void addEndState(State state) {
         this.endState.add(state);
     }
+
 
 }

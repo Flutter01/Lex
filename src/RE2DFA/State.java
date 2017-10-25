@@ -1,9 +1,6 @@
 package RE2DFA;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class State {
 
@@ -27,6 +24,9 @@ public class State {
                 break;
             }
         }
+    }
+    public Set<State> getOwnStates(){
+        return this.states;
     }
 
     public int getStateNo() {
@@ -56,15 +56,35 @@ public class State {
         }
         list.add(next);
     }
+    public Map<Character, ArrayList<State>> getNextState(){
+        return this.nextState;
+    }
+
+    public ArrayList<Integer> getNextStateSet() {
+        ArrayList<Integer> states = new ArrayList<>();
+        Map<Character, ArrayList<State>> map = this.nextState;
+        for(Map.Entry<Character, ArrayList<State>> entry : map.entrySet()){
+            ArrayList<State> array = entry.getValue();
+            for(int i=0;i<array.size();i++){
+                states.add(array.get(i).getStateNo());
+            }
+        }
+        return states;
+    }
     public ArrayList<State> getAllProductions(char c) {
-        if (this.nextState.get(c) == null)	{	return new ArrayList<State> ();	}
-        else 								{	return this.nextState.get(c);	}
+        if (this.nextState.get(c) == null)	{
+            return new ArrayList<State> ();
+        }
+        else {
+            return this.nextState.get(c);
+        }
     }
 
     public void setStates(Set<State> states) {
         this.states = states;
     }
     public Set<State> getStates() {
-        return states;
+        return this.states;
     }
+
 }
