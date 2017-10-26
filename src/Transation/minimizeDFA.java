@@ -122,7 +122,6 @@ public class minimizeDFA {
                 }
             }
         }
-        //使用集合中某一个DFA状态代替等价的其他状态
         ArrayList<State> state = new ArrayList<>();
         for(int i=0;i<state_division.size();i++){
             int num = state_division.get(i).get(0);
@@ -133,11 +132,8 @@ public class minimizeDFA {
             int num = state_division.get(i).get(0);
             State dfaState = getDFAState(state, num);
             for(int n=0;n<input.size();n++){
-                //num在某个操作下指向的下一个节点
                 int node = map.get(num).get(n);
-                //判断是不是不存在只想下一个节点的边
                 if(node!=-1){
-                    //判断这个节点有没有被替代
                     if(IsReplaceable(node,state_division)==-1){
                         State temp_state = getDFAState(state, node);
                         dfaState.setNextState(input.get(n),temp_state);
