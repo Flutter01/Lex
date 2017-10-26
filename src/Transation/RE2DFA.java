@@ -1,16 +1,14 @@
-package RE2DFA;
+package Transation;
 
-
-import sun.plugin.javascript.navig.Link;
 
 import java.util.*;
 
-public class RE2NFA {
+public class RE2DFA {
 
     private static int stateNo = 0;
     private static Set<State> set1 = new HashSet <State> ();
     private static Set<State> set2 = new HashSet <State> ();
-    private static Set <Character> input = new HashSet <Character> ();
+    private static ArrayList<Character> input = new ArrayList<> ();
 
     public NFA produceNFA(String expr){
         stateNo=0;
@@ -38,7 +36,8 @@ public class RE2NFA {
                 continue;
             }
             //if是表达式就构造小的NFA并压栈
-            input.add(postfixExpr.charAt(i));
+            if(!input.contains(postfixExpr.charAt(i)))
+                input.add(postfixExpr.charAt(i));
             NFA newNFA = new NFA();  //假设只有一个a 按照托马孙算法
             State state1 = new State(stateNo);
             State state2 = new State(stateNo+1);
@@ -100,58 +99,15 @@ public class RE2NFA {
                     State p = new State (set2, stateNo++);
                     unprocessed.addLast(p);
                     dfa.getDFA().addLast(p);
-                    if(p.getStateNo()==0) p.setStateNo(-1);
                     state.setNextState( symbol,p);
 
                 } else {
-                    if(st.getStateNo()==0) st.setStateNo(-1);
                     state.setNextState( symbol,st);
                 }
             }
         }
 
         return dfa;
-    }
-
-    public DFA simplifyDFA(DFA dfa) {
-        //将DFA的结果集按是否含终态分为两个
-        ArrayList<ArrayList<Integer>> recentStates = new ArrayList<>();
-        ArrayList<ArrayList<Integer>> tLoopStates = new ArrayList<>();
-        ArrayList<ArrayList<Integer>> nLoopStates = new ArrayList<>();
-        ArrayList<Integer> tList = new ArrayList();
-        ArrayList<Integer> nList = new ArrayList();
-
-        LinkedList<State> states = dfa.getDFA();
-        for(int i=0;i<states.size();i++) {
-            if(states.get(i).isFinalSate()==true) {
-                tList.add(states.get(i).getStateNo());
-                tLoopStates.add(states.get(i).getNextStateSet());
-            } else {
-                nList.add(states.get(i).getStateNo());
-                nLoopStates.add(states.get(i).getNextStateSet());
-            }
-        }
-        recentStates.add(tList);
-        recentStates.add(nList);
-        //下面找出每个状态的后继集合
-
-        return dfa;
-    }
-
-    private boolean couldSplitT(Set<State> splitTSet,Set<State> nonTerminalStates) {
-        //确定该终态集合是否可以继续分下去
-        boolean couldSplit = false;
-        Set<State> states = new HashSet<>();
-        for (State s : splitTSet) {
-           // states.addAll(s.getNextStateSet());
-        }
-        for(State st : states) {
-            if(nonTerminalStates.contains(st)){
-                couldSplit = true;
-                break;
-            }
-        }
-        return couldSplit;
     }
 
     private static void removeEpsilonProduction() {
@@ -349,10 +305,15 @@ public class RE2NFA {
         return false;
     }
 
+    public ArrayList<Character> getInput() {
+        return input;
+    }
+
     public static void main(String[] args){
         String s = "(a|b)a*";
 
-        RE2NFA re = new RE2NFA();
+        RE2DFA re = new RE2DFA();
+        minimizeDFA min = new minimizeDFA();
        // System.out.println(re.infixToPostfix(a));
 /*        LinkedList<State> states = re.produceNFA(s).getNFA();
         Map<Character, ArrayList<State>> map =states.get(8).getNextState();
@@ -372,8 +333,23 @@ public class RE2NFA {
         }*/
         NFA nfa = re.produceNFA(s);
         DFA dfa = re.produceDFA(nfa);
-        State st = dfa.getDFA().get(3);
+        System.out.println(re.getInput());
+        DFA dfa0 = min.Main(dfa,re.getInput());
+        LinkedList<State> st = dfa0.getDFA();
+        for(State s1: st) {
+            System.out.println(s1.getStateNo()+"  ");
+            Map<Character, ArrayList<State>> map =s1.getNextState();
+            for(Map.Entry<Character, ArrayList<State>> entry : map.entrySet()){
+                ArrayList<State> array = entry.getValue();
+                System.out.print(entry.getKey()+"→");
+                for(int i=0;i<array.size();i++){
+                    System.out.println(array.get(i).getStateNo()+" ");
+                }
+            }
+        }
+/*        State st = dfa.getDFA().getFirst();
         Set<State> set = st.getOwnStates();
+        System.out.println("$$"+st.getStateNo());
         for (State state : set) {
             System.out.println(state.getStateNo());
         }
@@ -386,6 +362,6 @@ public class RE2NFA {
             for(int i=0;i<array.size();i++){
                 System.out.println(array.get(i).getStateNo());
             }
-        }
+        }*/
     }
 }

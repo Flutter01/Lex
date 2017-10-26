@@ -1,9 +1,6 @@
-package RE2DFA;
+package Transation;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 
 public class NFA {
     private LinkedList<State> nfa;
