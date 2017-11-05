@@ -3,14 +3,14 @@ package Lexer;
 /**
  * Created by asus1 on 2017/10/24.
  */
-/*public class Token {
-    private int code;
+public class Token {
+    private String type;
     private String str;
     private String error;
 
-    public Token(int c,String s){
-        this.code = c;
-        this.str = s;
+    public Token(String t, String str){
+        this.type = t;
+        this.str = str;
         this.error = null;
     }
 
@@ -18,20 +18,21 @@ package Lexer;
         this.error = error;
     }
 
+    /**构成<string,type>的可输出格式*/
     public String toString(){
-        if(this.error != null)
+        if(this.error != null) {
             return "Error:" + this.error;
-        return "<" + this.code + "," + this.str + ">";
-    }
-}*/
-public class Token {
-    private int id;
-    public Token(int id){
-        this.id=id;
-    }
-    public int getId() {
-        return id;
+        }
+        return "<" + this.str + "," + this.type + ">";
     }
 
+    /**获得token类型*/
+    public String getType() {
+        return type;
+    }
 
+    /**获得词法单元*/
+    public String getStr() {
+        return str;
+    }
 }

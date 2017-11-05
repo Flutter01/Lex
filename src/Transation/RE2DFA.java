@@ -45,9 +45,7 @@ public class RE2DFA {
             state2.setFinalSate(true);
             stateNo = stateNo+2; //下一个状态的开始序号
             newNFA.addState(state1);
-            //newNFA.addStartState(state1);
             newNFA.addState(state2);
-            //newNFA.addEndState(state2);
             middleNFAs.push(newNFA);
         }
         NFA nfa = middleNFAs.pop();
@@ -65,11 +63,8 @@ public class RE2DFA {
         set2 = new HashSet <State> ();
 
         set1.add(nfa.getNFA().getFirst());
-
-        removeEpsilonProduction ();
-
+        seekEpsilonClosure();
         State dfaStart = new State (set2, stateNo++);
-
         dfa.getDFA().addLast(dfaStart);
         unprocessed.addLast(dfaStart);
 
@@ -79,9 +74,8 @@ public class RE2DFA {
             for (Character symbol : input) {
                 set1 = new HashSet<State> ();
                 set2 = new HashSet<State> ();
-
                 moveStates (symbol, state.getStates(), set1);
-                removeEpsilonProduction ();
+                seekEpsilonClosure ();
 
                 boolean found = false;
                 State st = null;
@@ -110,19 +104,15 @@ public class RE2DFA {
         return dfa;
     }
 
-    private static void removeEpsilonProduction() {
+    private static void seekEpsilonClosure() {
         Stack <State> stack = new Stack <State> ();
         set2 = set1;
 
         for (State st : set1) { stack.push(st);	}
-
         while (!stack.isEmpty()) {
             State s = stack.pop();
-
             ArrayList <State> epsilonStates = s.getAllProductions ('ε');
-
             for (State p : epsilonStates) {
-
                 if (!set2.contains(p)) {
                     set2.add(p);
                     stack.push(p);
@@ -248,11 +238,11 @@ public class RE2DFA {
         String postExpr = new String("");
         Stack stack = new Stack();
         for(int i=0;i<infixExpr.length();i++) {
-            if(infixExpr.charAt(i)=='('|infixExpr.charAt(i)=='|') {
+            if(infixExpr.charAt(i)=='('|infixExpr.charAt(i)=='*') {
                 stack.push(infixExpr.charAt(i));
                 continue;
             }
-            if(infixExpr.charAt(i)=='.'){
+            if(infixExpr.charAt(i)=='.'|infixExpr.charAt(i)=='|'){
                 if(stack.isEmpty()){
                     stack.push(infixExpr.charAt(i));
                     continue;
@@ -310,58 +300,11 @@ public class RE2DFA {
     }
 
     public static void main(String[] args){
-        String s = "(a|b)a*";
+        String s = "=";
 
         RE2DFA re = new RE2DFA();
         minimizeDFA min = new minimizeDFA();
-       // System.out.println(re.infixToPostfix(a));
-/*        LinkedList<State> states = re.produceNFA(s).getNFA();
-        Map<Character, ArrayList<State>> map =states.get(8).getNextState();
-        System.out.println(states.get(8).getStateNo());
-        for(Map.Entry<Character, ArrayList<State>> entry : map.entrySet()){
-            ArrayList<State> array = entry.getValue();
-            System.out.println("Key = "+entry.getKey());
-            for(int i=0;i<array.size();i++){
-                System.out.println(array.get(i).getStateNo());
-            }
-        }
-        System.out.println(input.size());*/
-        //System.out.println(re.produceNFA(s).getStartState().getNextState());
-/*        LinkedList<State> states = re.produceNFA(s).getNFA();
-        for(int i=0;i<states.size();i++) {
-            System.out.println(states.get(i).getStateNo());
-        }*/
-        NFA nfa = re.produceNFA(s);
-        DFA dfa = re.produceDFA(nfa);
-        System.out.println(re.getInput());
-        DFA dfa0 = min.Main(dfa,re.getInput());
-        LinkedList<State> st = dfa0.getDFA();
-        for(State s1: st) {
-            System.out.println(s1.getStateNo()+"  ");
-            Map<Character, ArrayList<State>> map =s1.getNextState();
-            for(Map.Entry<Character, ArrayList<State>> entry : map.entrySet()){
-                ArrayList<State> array = entry.getValue();
-                System.out.print(entry.getKey()+"→");
-                for(int i=0;i<array.size();i++){
-                    System.out.println(array.get(i).getStateNo()+" ");
-                }
-            }
-        }
-/*        State st = dfa.getDFA().getFirst();
-        Set<State> set = st.getOwnStates();
-        System.out.println("$$"+st.getStateNo());
-        for (State state : set) {
-            System.out.println(state.getStateNo());
-        }
-        System.out.println(st.isFinalSate());
-
-        Map<Character, ArrayList<State>> map =st.getNextState();
-        for(Map.Entry<Character, ArrayList<State>> entry : map.entrySet()){
-            ArrayList<State> array = entry.getValue();
-            System.out.println("Key = "+entry.getKey());
-            for(int i=0;i<array.size();i++){
-                System.out.println(array.get(i).getStateNo());
-            }
-        }*/
+        NFA nfa = re.produceNFA("x1");
+        System.out.println(re.produceDFA(nfa).getDFA().size());
     }
 }

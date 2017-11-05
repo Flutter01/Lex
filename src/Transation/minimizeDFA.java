@@ -87,9 +87,8 @@ public class minimizeDFA {
         ArrayList<Integer> terminalStates = new ArrayList();
         ArrayList<Integer> initialStates = new ArrayList();
         ArrayList<Set<State>> list = new ArrayList<>();//原始DFA里每个DFA含有的NFA状态
-        LinkedList<State> states = dfa.getDFA();
-        Map<Integer, ArrayList<Integer>> map = new HashMap<>();//key是起始状态 value是后继状态(NFA转DFA的表)
-        State containStates;
+        LinkedList<State> states = dfa.getDFA(); //获得DFA里的所有状态
+        Map<Integer, ArrayList<Integer>> map = transationDFA(dfa, input);//key是起始状态 value是后继状态(NFA转DFA的表)
         for(int i=0;i<states.size();i++) {
             if(states.get(i).isFinalSate()==true) {
                 terminalStates.add(states.get(i).getStateNo());
@@ -97,15 +96,6 @@ public class minimizeDFA {
                 initialStates.add(states.get(i).getStateNo());
             }
             list.add(states.get(i).getStates());
-            containStates = states.get(i);
-            ArrayList<Integer> stateNos = new ArrayList<>();
-            for(int j=0;j<containStates.getNextStateSet().size();j++) {
-                int a;
-                if(containStates.getNextStateSet().get(j)==0&&containStates.getStateNo()!=0) a=-1;
-                else a=containStates.getNextStateSet().get(j);
-                stateNos.add(a);
-            }
-            map.put(containStates.getStateNo(),stateNos);
         }
         ArrayList<ArrayList<Integer>> state_division = new ArrayList<>();
         state_division.add(terminalStates);
@@ -155,4 +145,21 @@ public class minimizeDFA {
         return dfa0;
     }
 
+    private Map<Integer, ArrayList<Integer>> transationDFA(DFA dfa, ArrayList<Character> input) {
+        Map<Integer, ArrayList<Integer>> transationDFA = new HashMap<>();
+        LinkedList<State> states = dfa.getDFA(); //这个DFA包含的所有状态
+        for(State s:states) {
+            ArrayList<Integer> nextStates = new ArrayList<>();
+            for(char c:input) {
+                for(State st: s.getAllProductions(c)){
+                    if(st.getStateNo()==0)
+                        nextStates.add(-1);
+                    else
+                        nextStates.add(st.getStateNo());
+                }
+            }
+            transationDFA.put(s.getStateNo(),nextStates);
+        }
+        return  transationDFA;
+    }
 }
